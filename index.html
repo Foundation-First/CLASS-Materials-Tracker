@@ -593,22 +593,28 @@ async function init(){
 }
 
 async function startApp(){
-  const hasData = await loadSharedState();
-  if(!hasData){
-    state.items=DEFAULT_ITEMS.map(i=>({id:uid(),name:i.name,category:i.category,threshold:5}));
-    state.offices=DEFAULT_OFFICES.map(n=>({id:uid(),name:n}));
-    state.logs={};
-    state.invoices=[];
-    users={list:[...DEFAULT_USERS]};
-    await saveState();
+  try{
+    const hasData = await loadSharedState();
+    if(!hasData){
+      state.items=DEFAULT_ITEMS.map(i=>({id:uid(),name:i.name,category:i.category,threshold:5}));
+      state.offices=DEFAULT_OFFICES.map(n=>({id:uid(),name:n}));
+      state.logs={};
+      state.invoices=[];
+      users={list:[...DEFAULT_USERS]};
+      await saveState();
+    }
+    refreshLoginSelect();
+    currentTab='dashboard';
+    buildFYSelect();
+    buildNavTabs();
+    buildSidebar();
+    renderPage();
+    startSyncPolling();
+  }catch(e){
+    console.error('startApp failed:', e);
+    document.getElementById('pageContent').innerHTML =
+      `<div style="padding:20px;border:1px solid #fca5a5;background:#fef2f2;border-radius:8px;color:#991b1b;font-size:13px;white-space:pre-wrap">Could not load shared data from SharePoint:\n\n${(e&&e.message)?e.message:e}\n\nOpen the browser console (F12) for full details.</div>`;
   }
-  refreshLoginSelect();
-  currentTab='dashboard';
-  buildFYSelect();
-  buildNavTabs();
-  buildSidebar();
-  renderPage();
-  startSyncPolling();
 }
 
 function buildFYSelect(){
