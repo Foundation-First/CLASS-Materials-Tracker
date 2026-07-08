@@ -93,7 +93,18 @@ input:focus,select:focus,textarea:focus{border-color:#2E4DA3;box-shadow:0 0 0 2p
 </head>
 <body>
 
-<div id="loginWrap" class="login-wrap">
+<div id="msalGate" class="login-wrap">
+  <div class="login-box">
+    <div style="width:48px;height:48px;background:#eef2ff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">🔒</div>
+    <div style="font-size:17px;font-weight:700;color:#111827;margin-bottom:4px">CLASS Materials Tracker</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">Sign in with your Microsoft 365 account to access the shared tracker</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px" onclick="signInMicrosoft()">Sign in with Microsoft</button>
+    <div id="msalGateError" style="font-size:12px;color:#dc2626;margin-top:12px;display:none"></div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:14px">You'll only see this if your Microsoft account doesn't already have a session.</div>
+  </div>
+</div>
+
+<div id="loginWrap" class="login-wrap" style="display:none">
   <div class="login-box">
     <div style="width:48px;height:48px;background:#eef2ff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">📦</div>
     <div style="font-size:17px;font-weight:700;color:#111827;margin-bottom:4px">CLASS Materials Tracker</div>
@@ -105,7 +116,7 @@ input:focus,select:focus,textarea:focus{border-color:#2E4DA3;box-shadow:0 0 0 2p
       <button class="btn btn-primary" style="white-space:nowrap;padding:5px 12px;font-size:12px" onclick="addLoginUser()">Add</button>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px" onclick="doLogin()">Sign in</button>
-    <div style="font-size:11px;color:#9ca3af;margin-top:14px">Up to 5 team members. Each person can save locally. Use Back Up/Restore to share updates.</div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:14px">Up to 5 team members. Changes sync automatically for everyone signed in.</div>
   </div>
 </div>
 
@@ -234,6 +245,7 @@ input:focus,select:focus,textarea:focus{border-color:#2E4DA3;box-shadow:0 0 0 2p
 
 <input id="restoreFileInput" type="file" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/msal/2.38.3/msal-browser.min.js"></script>
 <script>
 const FY_OPTIONS={
   'FY26':{label:'Jul 2025 – Jun 2026'},
@@ -274,27 +286,175 @@ function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){retur
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
-// ── STANDALONE STORAGE + FILE BACKUP ──────────────────────────────
-// This version works as a normal HTML file. Each user's browser keeps its own
-// saved copy in localStorage. Team sharing happens by downloading a JSON backup
-// file and having teammates restore that file.
+// ── MICROSOFT 365 AUTH + SHARED EXCEL STORAGE ─────────────────────
+// Data lives in an Excel workbook in SharePoint. Everyone signed into this
+// tracker with a Microsoft 365 account reads/writes the same four tables
+// (Items, Offices, Logs, Invoices) plus Users — changes are visible to
+// everyone within a save (~30s auto-refresh poll for others' edits).
+
+// ⚠️ FILL THESE IN before using — see setup notes shared alongside this file.
+const MSAL_CONFIG = {
+  auth: {
+    clientId: 'PASTE_APPLICATION_CLIENT_ID_HERE',
+    authority: 'https://login.microsoftonline.com/PASTE_DIRECTORY_TENANT_ID_HERE',
+    redirectUri: window.location.origin + window.location.pathname
+  },
+  cache: { cacheLocation: 'localStorage' }
+};
+const GRAPH_SCOPES = ['Files.ReadWrite'];
+const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
+const SITE_HOST = 'smartbeginningsra.sharepoint.com';
+const SITE_PATH = '/sites/Finance-Operations';
+const LIBRARY_NAME = 'Procurement';
+const WORKBOOK_NAME = 'CLASS-Materials-Tracker.xlsx';
+
+let msalInstance=null, msalAccount=null, driveId=null, workbookItemId=null;
+let lastSynced={items:[],offices:[],invoices:[],logs:{},users:[]};
+
+function msalInit(){
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+}
+
+async function trySilentSignIn(){
+  await msalInstance.handleRedirectPromise().catch(()=>{});
+  const accounts = msalInstance.getAllAccounts();
+  if(accounts.length){ msalAccount = accounts[0]; return true; }
+  return false;
+}
+
+async function signInMicrosoft(){
+  const errEl=document.getElementById('msalGateError');
+  errEl.style.display='none';
+  try{
+    const res = await msalInstance.loginPopup({scopes:GRAPH_SCOPES});
+    msalAccount = res.account;
+    document.getElementById('msalGate').style.display='none';
+    document.getElementById('loginWrap').style.display='flex';
+    init();
+  }catch(e){
+    errEl.textContent = 'Sign-in failed: ' + (e && e.message ? e.message : e);
+    errEl.style.display='block';
+  }
+}
+
+async function getGraphToken(){
+  try{
+    const res = await msalInstance.acquireTokenSilent({scopes:GRAPH_SCOPES, account:msalAccount});
+    return res.accessToken;
+  }catch(e){
+    const res = await msalInstance.acquireTokenPopup({scopes:GRAPH_SCOPES});
+    msalAccount = res.account;
+    return res.accessToken;
+  }
+}
+
+async function graphFetch(path, opts={}){
+  const token = await getGraphToken();
+  const res = await fetch(GRAPH_BASE+path, {...opts, headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(!res.ok){ const body = await res.text().catch(()=>''); throw new Error(`Graph ${res.status}: ${body}`); }
+  if(res.status===204) return null;
+  return res.json();
+}
+
+async function resolveWorkbook(){
+  if(workbookItemId) return;
+  const site = await graphFetch(`/sites/${SITE_HOST}:${SITE_PATH}`);
+  const drives = await graphFetch(`/sites/${site.id}/drives`);
+  const drive = drives.value.find(d=>d.name===LIBRARY_NAME);
+  if(!drive) throw new Error(`Library "${LIBRARY_NAME}" not found on this site.`);
+  driveId = drive.id;
+  const file = await graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(WORKBOOK_NAME)}`);
+  workbookItemId = file.id;
+}
+
+function tablePath(tableName, suffix=''){ return `/drives/${driveId}/items/${workbookItemId}/workbook/tables/${tableName}${suffix}`; }
+
+async function getTableRows(tableName){
+  const data = await graphFetch(tablePath(tableName,'/rows'));
+  return data.value.map((r,i)=>({index:i, values:r.values[0]}));
+}
+async function addTableRow(tableName, values){
+  await graphFetch(tablePath(tableName,'/rows'), {method:'POST', body:JSON.stringify({values:[values]})});
+}
+async function updateTableRow(tableName, index, values){
+  await graphFetch(tablePath(tableName, `/rows/itemAt(index=${index})`), {method:'PATCH', body:JSON.stringify({values:[values]})});
+}
+async function deleteTableRow(tableName, index){
+  await graphFetch(tablePath(tableName, `/rows/itemAt(index=${index})`), {method:'DELETE'});
+}
+function nonBlankRows(rows){ return rows.filter(r=>r.values.some(v=>v!==''&&v!==null&&v!==undefined)); }
+
+// Diff `oldArr` vs `newArr` (by keyFn) and push only the changed rows to Graph.
+// rowKeyFn extracts the same key from a server row's raw values array.
+async function syncTable(tableName, oldArr, newArr, toRow, keyFn, rowKeyFn){
+  rowKeyFn = rowKeyFn || (values=>String(values[0]));
+  const oldMap=new Map(oldArr.map(x=>[String(keyFn(x)),x]));
+  const newMap=new Map(newArr.map(x=>[String(keyFn(x)),x]));
+  const toAdd=[], toUpdate=[], toDeleteKeys=[];
+  for(const [k,v] of newMap){
+    if(!oldMap.has(k)) toAdd.push(v);
+    else if(JSON.stringify(oldMap.get(k))!==JSON.stringify(v)) toUpdate.push(v);
+  }
+  for(const k of oldMap.keys()) if(!newMap.has(k)) toDeleteKeys.push(k);
+  if(!toAdd.length && !toUpdate.length && !toDeleteKeys.length) return;
+
+  const serverRows = await getTableRows(tableName);
+  const findIdx = key => serverRows.find(r=>rowKeyFn(r.values)===key)?.index;
+
+  toDeleteKeys.sort((a,b)=>(findIdx(b)??-1)-(findIdx(a)??-1));
+  for(const key of toDeleteKeys){ const idx=findIdx(key); if(idx!==undefined) await deleteTableRow(tableName, idx); }
+  for(const v of toUpdate){ const idx=findIdx(String(keyFn(v))); if(idx!==undefined) await updateTableRow(tableName, idx, toRow(v)); else await addTableRow(tableName, toRow(v)); }
+  for(const v of toAdd){ await addTableRow(tableName, toRow(v)); }
+}
+
+function flattenLogs(logs){
+  const rows=[];
+  for(const fy in logs) for(const officeId in logs[fy]) for(const month in logs[fy][officeId])
+    (logs[fy][officeId][month]||[]).forEach(e=>rows.push({key:`${fy}|${officeId}|${month}|${e.itemId}`,fy,officeId,month,itemId:e.itemId,qty:e.qty,notes:e.notes||''}));
+  return rows;
+}
+
+function snapshotState(){
+  return JSON.parse(JSON.stringify({items:state.items,offices:state.offices,invoices:state.invoices,logs:state.logs,users:users.list}));
+}
+
 async function saveState(){
-  const savedAt=new Date().toISOString();
-  lastKnownServerSavedAt=savedAt;
-  lsSet('cmt2_state',{state,users,fy:currentFY,savedBy:currentUser,savedAt});
+  await resolveWorkbook();
+  await syncTable('Items', lastSynced.items, state.items, it=>[it.id,it.name,it.category,it.threshold], it=>it.id);
+  await syncTable('Offices', lastSynced.offices, state.offices, o=>[o.id,o.name], o=>o.id);
+  await syncTable('Invoices', lastSynced.invoices, state.invoices,
+    inv=>[inv.id,inv.vendor,inv.itemsDesc,inv.dateOrdered,inv.qtyOrdered,inv.dateReceived,inv.qtyReceived,inv.total,inv.dueDate,inv.paid,inv.confirmed,inv.notes,inv.createdBy,inv.fy],
+    inv=>inv.id);
+  await syncTable('Users', lastSynced.users.map(n=>({key:n})), users.list.map(n=>({key:n})), u=>[u.key], u=>u.key);
+  await syncTable('Logs', flattenLogs(lastSynced.logs), flattenLogs(state.logs),
+    r=>[r.fy,r.officeId,r.month,r.itemId,r.qty,r.notes], r=>r.key,
+    values=>`${values[0]}|${values[1]}|${values[2]}|${values[3]}`);
+  lastSynced = snapshotState();
+  lastKnownServerSavedAt = new Date().toISOString();
 }
 
 async function loadSharedState(){
-  const saved = lsGet('cmt2_state');
-  if(saved && saved.state && saved.state.items && saved.state.items.length){
-    state = saved.state;
-    if(!state.invoices) state.invoices = [];
-    if(saved.users && saved.users.list) users = saved.users;
-    if(saved.fy) currentFY = saved.fy;
-    lastKnownServerSavedAt = saved.savedAt || null;
-    return true;
-  }
-  return false;
+  await resolveWorkbook();
+  const [itemsRows, officesRows, logsRows, invoicesRows, usersRows] = await Promise.all(
+    ['Items','Offices','Logs','Invoices','Users'].map(getTableRows)
+  );
+  const items = nonBlankRows(itemsRows).map(r=>({id:String(r.values[0]), name:r.values[1], category:r.values[2], threshold:Number(r.values[3])||5}));
+  const offices = nonBlankRows(officesRows).map(r=>({id:String(r.values[0]), name:r.values[1]}));
+  const invoices = nonBlankRows(invoicesRows).map(r=>({id:String(r.values[0]), vendor:r.values[1], itemsDesc:r.values[2], dateOrdered:r.values[3], qtyOrdered:r.values[4], dateReceived:r.values[5], qtyReceived:r.values[6], total:r.values[7], dueDate:r.values[8], paid:r.values[9], confirmed:r.values[10], notes:r.values[11], createdBy:r.values[12], fy:r.values[13]}));
+  const logs={};
+  nonBlankRows(logsRows).forEach(r=>{
+    const [fy,officeId,month,itemId,qty,notes]=r.values;
+    if(!logs[fy]) logs[fy]={};
+    if(!logs[fy][officeId]) logs[fy][officeId]={};
+    if(!logs[fy][officeId][month]) logs[fy][officeId][month]=[];
+    logs[fy][officeId][month].push({itemId:String(itemId), qty:Number(qty), notes:notes||''});
+  });
+  const userNames = nonBlankRows(usersRows).map(r=>String(r.values[0]));
+  if(!items.length && !offices.length && !userNames.length) return false;
+  state = {items, offices, logs, invoices};
+  users = {list:userNames};
+  lastSynced = snapshotState();
+  return true;
 }
 
 function backupFilename(){
@@ -363,8 +523,13 @@ async function handleRestoreFile(evt){
 
 function startSyncPolling(){
   clearInterval(pollTimer);
-  // File-based backups do not auto-detect teammate changes. Use Back Up/Restore
-  // or move this tracker to a shared database for live multi-user updates.
+  pollTimer = setInterval(async ()=>{
+    if(document.querySelector('.modal-overlay.open')) return; // don't yank data mid-edit
+    try{
+      await loadSharedState();
+      buildFYSelect(); buildSidebar(); renderPage();
+    }catch(e){ console.warn('Sync refresh failed:', e); }
+  }, 30000);
 }
 function dismissSyncBanner(){document.getElementById('syncBanner')?.classList.remove('show');}
 
@@ -405,9 +570,8 @@ function doLogout(){
   document.getElementById('loginWrap').style.display='flex';
 }
 
-function init(){
-  const savedUsers = lsGet('cmt2_users');
-  if(savedUsers && savedUsers.list) users = savedUsers;
+async function init(){
+  try{ await loadSharedState(); }catch(e){ console.warn('Could not preload shared users:', e); }
   refreshLoginSelect();
   const last=lsGet('cmt2_lastUser');
   if(last&&users.list.includes(last)){
@@ -1183,7 +1347,18 @@ function exportCSV(){
   showToast('CSV exported to Downloads folder.');
 }
 
-init();
+async function bootApp(){
+  msalInit();
+  const signedIn = await trySilentSignIn();
+  if(signedIn){
+    document.getElementById('msalGate').style.display='none';
+    document.getElementById('loginWrap').style.display='flex';
+    init();
+  } else {
+    document.getElementById('msalGate').style.display='flex';
+  }
+}
+bootApp();
 </script>
 </body>
 </html>
