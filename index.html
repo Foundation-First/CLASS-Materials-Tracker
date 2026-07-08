@@ -245,7 +245,10 @@ input:focus,select:focus,textarea:focus{border-color:#2E4DA3;box-shadow:0 0 0 2p
 
 <input id="restoreFileInput" type="file" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/msal/2.38.3/msal-browser.min.js"></script>
+<script type="text/javascript" src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+<script type="text/javascript">
+  if(typeof msal === 'undefined') document.write(unescape("%3Cscript src='https://alcdn.msftauth.net/browser/2.35.0/js/msal-browser.min.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
 <script>
 const FY_OPTIONS={
   'FY26':{label:'Jul 2025 – Jun 2026'},
@@ -312,6 +315,11 @@ let msalInstance=null, msalAccount=null, driveId=null, workbookItemId=null;
 let lastSynced={items:[],offices:[],invoices:[],logs:{},users:[]};
 
 function msalInit(){
+  if(typeof msal === 'undefined'){
+    const errEl=document.getElementById('msalGateError');
+    if(errEl){ errEl.textContent='The Microsoft sign-in library failed to load (network/CDN issue). Try refreshing, or check your network settings.'; errEl.style.display='block'; }
+    throw new Error('msal-browser library not loaded');
+  }
   msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
 }
 
@@ -326,6 +334,7 @@ async function signInMicrosoft(){
   const errEl=document.getElementById('msalGateError');
   errEl.style.display='none';
   try{
+    if(!msalInstance) msalInit();
     const res = await msalInstance.loginPopup({scopes:GRAPH_SCOPES});
     msalAccount = res.account;
     document.getElementById('msalGate').style.display='none';
