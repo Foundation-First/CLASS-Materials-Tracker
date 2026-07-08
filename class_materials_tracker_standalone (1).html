@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLASS Materials Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#f3f4f6;min-height:100vh}
+.app{max-width:1400px;margin:0 auto;background:#fff;box-shadow:0 0 0 1px #e5e7eb;min-height:100vh;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.hdr{background:#2E4DA3;padding:0 14px;height:54px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.hdr-left{display:flex;flex-direction:column;justify-content:center;margin-right:6px;flex-shrink:0}
+.hdr-super{font-size:11px;color:#b8c8f0;font-weight:500}
+.hdr-title{font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
+.hdr-sel{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;height:28px}
+.hdr-sel option{background:#2E4DA3;color:#fff}
+.hdr-dates{font-size:11px;color:#b8c8f0;white-space:nowrap}
+.hdr-gap{flex:1}
+.hdr-btn{padding:4px 10px;font-size:11px;border-radius:5px;cursor:pointer;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;height:28px;flex-shrink:0}
+.hdr-btn:hover{background:rgba(255,255,255,0.22)}
+.hdr-btn.save{background:#fff;color:#2E4DA3;border-color:#fff;font-weight:700}
+.hdr-btn.save:hover{background:#e8eef8}
+.hdr-btn.red{background:rgba(220,38,38,0.15);border-color:rgba(220,38,38,0.4);color:#fecaca}
+.hdr-btn.red:hover{background:rgba(220,38,38,0.25)}
+.hdr-user{display:flex;align-items:center;gap:5px;font-size:11px;color:#b8c8f0;white-space:nowrap;flex-shrink:0}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-weight:600;flex-shrink:0}
+.nav-tabs{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 16px;display:flex;gap:2px;flex-shrink:0;overflow-x:auto}
+.nav-tab{padding:10px 16px;font-size:13px;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;font-weight:500}
+.nav-tab:hover{color:#374151}
+.nav-tab.active{color:#2E4DA3;border-bottom-color:#2E4DA3;font-weight:600}
+.body-wrap{flex:1;display:flex;min-height:0;overflow:hidden}
+.sidebar{width:200px;flex-shrink:0;background:#f9fafb;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-section{padding:10px 10px 4px;font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:0.06em;text-transform:uppercase}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;color:#374151;cursor:pointer;border-radius:6px;margin:1px 6px;font-weight:500;transition:background 0.1s}
+.sidebar-item:hover{background:#e5e7eb;color:#111827}
+.sidebar-item.active{background:#eef2ff;color:#2E4DA3;font-weight:600}
+.sidebar-item .si-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0}
+.sidebar-item.active .si-dot{background:#2E4DA3}
+.sidebar-item .si-badge{margin-left:auto;font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+.sidebar-divider{height:1px;background:#e5e7eb;margin:6px 10px}
+.main{flex:1;padding:20px;min-width:0;overflow-y:auto}
+.mgrid{display:grid;gap:1px;background:#e5e7eb;border:1px solid #e5e7eb;border-radius:9px;overflow:hidden;margin-bottom:18px}
+.mc{background:#fff;padding:14px 18px}
+.mc .lbl{font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+.mc .val{font-size:26px;font-weight:700;color:#111827;line-height:1.1}
+.mc .val.blue{color:#2E4DA3}.mc .val.green{color:#16a34a}.mc .val.amber{color:#b45309}.mc .val.red{color:#dc2626}
+.mc .sub{font-size:11px;color:#9ca3af;margin-top:3px}
+.sec{border:1px solid #e5e7eb;border-radius:9px;overflow:hidden;margin-bottom:14px}
+.sec-hdr{padding:10px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.sec-hdr h3{font-size:13px;font-weight:700;color:#111827}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;color:#6b7280;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid #e5e7eb;background:#f9fafb;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+tfoot td{background:#f9fafb;font-weight:700;color:#111827;border-top:2px solid #e5e7eb}
+.cat-row td{font-size:13px;font-weight:700;color:#111827;background:#fff;border-top:2px solid #e5e7eb;padding-top:12px;padding-bottom:5px}
+tr.cat-row:first-child td{border-top:none;padding-top:8px}
+.btn{padding:5px 11px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;background:#fff;color:#374151;display:inline-flex;align-items:center;gap:4px}
+.btn:hover{background:#f9fafb}
+.btn-primary{background:#2E4DA3;color:#fff;border-color:#2E4DA3;font-weight:600}
+.btn-primary:hover{background:#254189}
+.btn-danger{color:#dc2626;border-color:#fca5a5}
+.btn-danger:hover{background:#fef2f2}
+.btn-sm{padding:3px 8px;font-size:11px}
+.btn-undo{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+label{font-size:12px;color:#6b7280;display:block;margin-bottom:3px;margin-top:9px}
+input,select,textarea{width:100%;font-size:13px;padding:6px 9px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111827;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#2E4DA3;box-shadow:0 0 0 2px rgba(46,77,163,0.12)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:300;align-items:flex-start;justify-content:center;padding-top:60px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:22px;width:520px;max-width:96vw;box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-hdr h3{font-size:15px;font-weight:700;color:#111827}
+.close-x{background:none;border:none;cursor:pointer;font-size:22px;color:#9ca3af;line-height:1}
+.toast{display:none;align-items:center;gap:8px;padding:9px 13px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#166534;margin-bottom:14px}
+.toast.show{display:flex}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.badge-low{background:#fef3c7;color:#92400e;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.badge-ok{background:#d1fae5;color:#065f46;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.badge-empty{background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.office-tab{padding:6px 14px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;background:#fff;color:#374151;font-weight:500}
+.office-tab.active{background:#2E4DA3;color:#fff;border-color:#2E4DA3}
+.month-btn{padding:4px 9px;font-size:11px;border:1px solid #d1d5db;border-radius:5px;cursor:pointer;background:#fff;color:#6b7280}
+.month-btn.active{background:#eef2ff;color:#2E4DA3;border-color:#2E4DA3;font-weight:600}
+.month-btn:hover{background:#f3f4f6}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f3f4f6;padding:20px}
+.login-box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px;width:360px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+.sync-banner{display:none;align-items:center;gap:8px;padding:6px 14px;background:#eef2ff;border-bottom:1px solid #dbe4fb;font-size:11px;color:#3949ab}
+.sync-banner.show{display:flex}
+@media print{.hdr-btn,.nav-tabs{display:none!important}.main{padding:0}}
+</style>
+</head>
+<body>
+
+<div id="loginWrap" class="login-wrap">
+  <div class="login-box">
+    <div style="width:48px;height:48px;background:#eef2ff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">📦</div>
+    <div style="font-size:17px;font-weight:700;color:#111827;margin-bottom:4px">CLASS Materials Tracker</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:20px">Select your name to continue</div>
+    <label style="text-align:left">Who are you?</label>
+    <select id="loginSel" style="margin-bottom:10px"><option value="">— Select your name —</option></select>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input id="newUserInput" placeholder="Or type your name to add...">
+      <button class="btn btn-primary" style="white-space:nowrap;padding:5px 12px;font-size:12px" onclick="addLoginUser()">Add</button>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px" onclick="doLogin()">Sign in</button>
+    <div style="font-size:11px;color:#9ca3af;margin-top:14px">Up to 5 team members. Each person can save locally. Use Back Up/Restore to share updates.</div>
+  </div>
+</div>
+
+<div id="appWrap" style="display:none">
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-left">
+      <span class="hdr-super">CLASS Materials</span>
+      <span class="hdr-title">Inventory Tracker</span>
+    </div>
+    <span style="font-size:11px;color:#b8c8f0;margin-right:2px;flex-shrink:0">FY</span>
+    <select id="fySel" class="hdr-sel" onchange="switchFY()"></select>
+    <span class="hdr-dates" id="hdrDates"></span>
+    <div class="hdr-gap"></div>
+    <div class="hdr-user" id="userPillHdr"></div>
+    <button class="hdr-btn" onclick="doLogout()">⇄ Switch user</button>
+    <button class="hdr-btn" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="hdr-btn" onclick="sharedBackup()" title="Download a JSON backup file your team can restore">📦 Back Up</button>
+    <button class="hdr-btn" onclick="sharedRestore()" title="Restore from a JSON backup file" style="background:rgba(255,220,80,.18);border-color:rgba(255,220,80,.4);color:#FFE566;">🔄 Restore</button>
+    <button class="hdr-btn" onclick="doPrint()">🖨 Print</button>
+    <button class="hdr-btn red" onclick="confirmClearFY()">✕ Clear FY</button>
+    <button class="hdr-btn save" onclick="manualSave()">💾 Save</button>
+  </div>
+  <div class="sync-banner" id="syncBanner">Tip: For team sharing, have the person who made updates click Back Up, then teammates click Restore and select that JSON file.</div>
+  <div class="nav-tabs" id="navTabs"></div>
+  <div class="body-wrap">
+    <div class="sidebar" id="appSidebar" style="display:none"></div>
+    <div class="main">
+      <div id="toastBar" class="toast">
+        <span id="toastMsg" style="flex:1"></span>
+        <button id="undoBtn" class="btn btn-undo btn-sm" style="display:none" onclick="doUndo()">↩ Undo</button>
+        <button class="btn btn-sm" style="padding:2px 6px" onclick="hideToast()">✕</button>
+      </div>
+      <div id="pageContent"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="itemModal"><div class="modal">
+  <div class="modal-hdr"><h3 id="itemModalTitle">Add item</h3><button class="close-x" onclick="closeModal('itemModal')">×</button></div>
+  <input type="hidden" id="item_id">
+  <label>Item name *</label><input id="item_name" placeholder="e.g. Infant CLASS Scorebook Packs">
+  <label>Category</label>
+  <select id="item_category">
+    <option value="Scorebook Packs">Scorebook Packs</option>
+    <option value="Dimension Guides">Dimension Guides</option>
+    <option value="Kits">Kits</option>
+    <option value="Manuals">Manuals</option>
+    <option value="Cards & Dictionaries">Cards & Dictionaries</option>
+    <option value="Other">Other</option>
+  </select>
+  <label>Low stock alert threshold</label>
+  <input id="item_threshold" type="number" min="0" placeholder="5">
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <button class="btn" onclick="closeModal('itemModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveItem()">Save item</button>
+  </div>
+</div></div>
+
+<div class="modal-overlay" id="officeModal"><div class="modal">
+  <div class="modal-hdr"><h3 id="officeModalTitle">Add office</h3><button class="close-x" onclick="closeModal('officeModal')">×</button></div>
+  <input type="hidden" id="office_id">
+  <label>Office name *</label><input id="office_name" placeholder="e.g. GPW Office">
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <button class="btn" onclick="closeModal('officeModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveOffice()">Save office</button>
+  </div>
+</div></div>
+
+<div class="modal-overlay" id="logModal"><div class="modal" style="width:600px">
+  <div class="modal-hdr"><h3 id="logModalTitle">Log monthly check</h3><button class="close-x" onclick="closeModal('logModal')">×</button></div>
+  <div class="g2" style="margin-bottom:12px">
+    <div><label>Office</label><select id="log_office" onchange="buildLogItems()"></select></div>
+    <div><label>Month</label>
+      <select id="log_month" onchange="buildLogItems()">
+        <option>July</option><option>August</option><option>September</option><option>October</option>
+        <option>November</option><option>December</option><option>January</option><option>February</option>
+        <option>March</option><option>April</option><option>May</option><option>June</option>
+      </select>
+    </div>
+  </div>
+  <div id="logItemsContainer" style="max-height:380px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px"></div>
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <button class="btn" onclick="closeModal('logModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveLog()">Save check</button>
+  </div>
+</div></div>
+
+<div class="modal-overlay" id="invoiceModal"><div class="modal" style="width:580px">
+  <div class="modal-hdr"><h3 id="invoiceModalTitle">Add order / invoice</h3><button class="close-x" onclick="closeModal('invoiceModal')">×</button></div>
+  <input type="hidden" id="inv_id">
+  <div class="g2">
+    <div><label>Vendor / supplier *</label><input id="inv_vendor" placeholder="e.g. Teachstone"></div>
+    <div><label>Item(s) ordered *</label><input id="inv_items_desc" placeholder="e.g. Pre-K Scorebook Packs (x50)"></div>
+  </div>
+  <div class="g2">
+    <div><label>Date ordered *</label><input id="inv_date_ordered" type="date"></div>
+    <div><label>Qty ordered</label><input id="inv_qty_ordered" type="number" min="0" placeholder="0"></div>
+  </div>
+  <div class="g2">
+    <div><label>Date received</label><input id="inv_date_received" type="date"></div>
+    <div><label>Qty received</label><input id="inv_qty_received" type="number" min="0" placeholder="0"></div>
+  </div>
+  <div class="g2">
+    <div><label>Invoice total ($)</label><input id="inv_total" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    <div><label>Invoice due date</label><input id="inv_due_date" type="date"></div>
+  </div>
+  <div class="g2">
+    <div><label>Amount paid ($)</label><input id="inv_paid" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    <div><label>Delivery confirmed?</label>
+      <select id="inv_confirmed">
+        <option value="">— Pending —</option>
+        <option value="yes">✓ Yes — amounts match</option>
+        <option value="partial">⚠ Partial — see notes</option>
+        <option value="no">✕ No — discrepancy</option>
+      </select>
+    </div>
+  </div>
+  <label>Notes</label><textarea id="inv_notes" rows="2" placeholder="Any discrepancies, reference numbers, etc."></textarea>
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <button class="btn" onclick="closeModal('invoiceModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveInvoice()">Save</button>
+  </div>
+</div></div>
+
+<input id="restoreFileInput" type="file" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
+
+<script>
+const FY_OPTIONS={
+  'FY26':{label:'Jul 2025 – Jun 2026'},
+  'FY27':{label:'Jul 2026 – Jun 2027'},
+  'FY28':{label:'Jul 2027 – Jun 2028'},
+  'FY29':{label:'Jul 2028 – Jun 2029'},
+};
+const FY_MONTHS=['July','August','September','October','November','December','January','February','March','April','May','June'];
+const DEFAULT_ITEMS=[
+  {name:'Infant CLASS Scorebook Packs',category:'Scorebook Packs'},
+  {name:'Toddler CLASS Scorebook Packs',category:'Scorebook Packs'},
+  {name:'Pre-K CLASS Scorebook Packs',category:'Scorebook Packs'},
+  {name:'Infant Dimension Guides',category:'Dimension Guides'},
+  {name:'Toddler Dimension Guides',category:'Dimension Guides'},
+  {name:'Pre-K Dimension Guides',category:'Dimension Guides'},
+  {name:'Strategy Cards',category:'Cards & Dictionaries'},
+  {name:'CLASS Dictionary',category:'Cards & Dictionaries'},
+  {name:'Strategy & CLASS Dictionary Combos',category:'Cards & Dictionaries'},
+  {name:'Infant CLASS Full Kit',category:'Kits'},
+  {name:'Toddler CLASS Full Kit',category:'Kits'},
+  {name:'Pre-K CLASS Full Kit',category:'Kits'},
+  {name:'Infant Manual',category:'Manuals'},
+  {name:'Toddler Manual',category:'Manuals'},
+  {name:'Pre-K Manual',category:'Manuals'},
+];
+const DEFAULT_OFFICES=['GPW Office','LFC Office','RAP Office'];
+const DEFAULT_USERS=['Dawn C.','Courtney V.','Jem'];
+const USER_COLORS=['#2E4DA3','#059669','#b45309','#be185d','#0369a1'];
+
+let currentFY='FY27', currentTab='dashboard', currentUser=null;
+let undoStack=[], toastTimer=null;
+let state={items:[],offices:[],logs:{},invoices:[]};
+let users={list:[]};
+let lastKnownServerSavedAt=null;
+let pollTimer=null;
+
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+// ── STANDALONE STORAGE + FILE BACKUP ──────────────────────────────
+// This version works as a normal HTML file. Each user's browser keeps its own
+// saved copy in localStorage. Team sharing happens by downloading a JSON backup
+// file and having teammates restore that file.
+async function saveState(){
+  const savedAt=new Date().toISOString();
+  lastKnownServerSavedAt=savedAt;
+  lsSet('cmt2_state',{state,users,fy:currentFY,savedBy:currentUser,savedAt});
+}
+
+async function loadSharedState(){
+  const saved = lsGet('cmt2_state');
+  if(saved && saved.state && saved.state.items && saved.state.items.length){
+    state = saved.state;
+    if(!state.invoices) state.invoices = [];
+    if(saved.users && saved.users.list) users = saved.users;
+    if(saved.fy) currentFY = saved.fy;
+    lastKnownServerSavedAt = saved.savedAt || null;
+    return true;
+  }
+  return false;
+}
+
+function backupFilename(){
+  const date=new Date().toISOString().slice(0,10);
+  const user=(currentUser||'user').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'');
+  return `class-materials-tracker-backup-${currentFY}-${date}-${user}.json`;
+}
+
+function normalizeBackupPayload(raw){
+  const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  if(parsed && parsed.state && parsed.users) return parsed;
+  if(parsed && parsed.items && parsed.offices) return {state: parsed, users, fy: currentFY};
+  throw new Error('This file does not look like a CLASS Materials Tracker backup.');
+}
+
+// Back Up = saves locally and downloads a JSON file that can be stored in Teams,
+// OneDrive, SharePoint, Google Drive, or emailed to a teammate.
+async function sharedBackup(){
+  await saveState();
+  const payload={
+    app:'CLASS Materials Tracker',
+    version:'standalone-file-backup-v1',
+    state, users, fy:currentFY,
+    backedUpBy: currentUser,
+    backedUpAt: new Date().toISOString(),
+    backedUpAtDisplay: new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})
+  };
+  lsSet('cmt2_backup', payload);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  a.download=backupFilename();
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  showToast(`Backup downloaded by ${currentUser}. Upload that JSON file where your team can access it.`);
+}
+
+// Restore = prompts the user to pick a JSON backup file and replaces the local view.
+async function sharedRestore(){
+  const input=document.getElementById('restoreFileInput');
+  if(!input){ alert('Restore file input is missing.'); return; }
+  input.value='';
+  input.click();
+}
+
+async function handleRestoreFile(evt){
+  const file=evt.target.files && evt.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const backup=normalizeBackupPayload(text);
+    const when = backup.backedUpAtDisplay || backup.backedUpAt || 'unknown time';
+    const who  = backup.backedUpBy || 'unknown';
+    if(!confirm(`Restore backup made by ${who} on ${when}?\n\nThis will replace your current local view with that snapshot.`)) return;
+    state = backup.state;
+    if(!state.invoices) state.invoices = [];
+    if(backup.users && backup.users.list) users = backup.users;
+    if(backup.fy) currentFY = backup.fy;
+    await saveState();
+    buildFYSelect(); buildNavTabs(); buildSidebar(); renderPage(); refreshLoginSelect();
+    dismissSyncBanner();
+    showToast(`Restored backup from ${file.name}.`);
+  }catch(e){
+    alert('Could not restore this backup file. ' + (e && e.message ? e.message : ''));
+  }
+}
+
+function startSyncPolling(){
+  clearInterval(pollTimer);
+  // File-based backups do not auto-detect teammate changes. Use Back Up/Restore
+  // or move this tracker to a shared database for live multi-user updates.
+}
+function dismissSyncBanner(){document.getElementById('syncBanner')?.classList.remove('show');}
+
+function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function userColor(n){const i=users.list.indexOf(n);return USER_COLORS[i%USER_COLORS.length]||'#2E4DA3';}
+function avatarHtml(n,sz=20){const c=userColor(n);return`<span class="avatar" style="width:${sz}px;height:${sz}px;background:${c}22;color:${c};font-size:${Math.floor(sz*0.42)}px">${initials(n)}</span>`;}
+
+function refreshLoginSelect(){
+  const sel=document.getElementById('loginSel');
+  sel.innerHTML='<option value="">— Select your name —</option>'+users.list.map(u=>`<option value="${u}">${u}</option>`).join('');
+}
+
+function addLoginUser(){
+  const n=document.getElementById('newUserInput').value.trim();
+  if(!n)return;
+  if(users.list.length>=5){alert('Maximum 5 users allowed.');return;}
+  if(!users.list.includes(n)){users.list.push(n);saveState();}
+  refreshLoginSelect();
+  document.getElementById('loginSel').value=n;
+  document.getElementById('newUserInput').value='';
+}
+
+function doLogin(){
+  const v=document.getElementById('loginSel').value;
+  if(!v){alert('Please select or add your name first.');return;}
+  currentUser=v;
+  lsSet('cmt2_lastUser',v);
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('appWrap').style.display='block';
+  document.getElementById('userPillHdr').innerHTML=avatarHtml(currentUser,20)+`<span>${currentUser}</span>`;
+  startApp();
+}
+
+function doLogout(){
+  currentUser=null;
+  clearInterval(pollTimer);
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('loginWrap').style.display='flex';
+}
+
+function init(){
+  const savedUsers = lsGet('cmt2_users');
+  if(savedUsers && savedUsers.list) users = savedUsers;
+  refreshLoginSelect();
+  const last=lsGet('cmt2_lastUser');
+  if(last&&users.list.includes(last)){
+    currentUser=last;
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('appWrap').style.display='block';
+    document.getElementById('userPillHdr').innerHTML=avatarHtml(currentUser,20)+`<span>${currentUser}</span>`;
+    startApp();
+  }
+}
+
+async function startApp(){
+  const hasData = await loadSharedState();
+  if(!hasData){
+    state.items=DEFAULT_ITEMS.map(i=>({id:uid(),name:i.name,category:i.category,threshold:5}));
+    state.offices=DEFAULT_OFFICES.map(n=>({id:uid(),name:n}));
+    state.logs={};
+    state.invoices=[];
+    users={list:[...DEFAULT_USERS]};
+    await saveState();
+  }
+  refreshLoginSelect();
+  currentTab='dashboard';
+  buildFYSelect();
+  buildNavTabs();
+  buildSidebar();
+  renderPage();
+  startSyncPolling();
+}
+
+function buildFYSelect(){
+  const sel=document.getElementById('fySel');
+  sel.innerHTML=Object.keys(FY_OPTIONS).map(k=>`<option value="${k}" ${k===currentFY?'selected':''}>${k}</option>`).join('');
+  document.getElementById('hdrDates').textContent=FY_OPTIONS[currentFY]?.label||'';
+}
+
+function buildNavTabs(){
+  const tabs=[
+    {id:'dashboard',icon:'⊞',label:'Dashboard'},
+    {id:'monthly',icon:'📅',label:'Monthly checks'},
+    {id:'inventory',icon:'📦',label:'Inventory'},
+    {id:'invoices',icon:'🧾',label:'Invoices'},
+    {id:'settings',icon:'⚙',label:'Settings'},
+  ];
+  document.getElementById('navTabs').innerHTML=tabs.map(t=>
+    `<div class="nav-tab ${currentTab===t.id?'active':''}" onclick="switchTab('${t.id}')">${t.icon} ${t.label}</div>`
+  ).join('');
+}
+
+function switchFY(){
+  currentFY=document.getElementById('fySel').value;
+  lsSet('cmt2_fy',currentFY);
+  document.getElementById('hdrDates').textContent=FY_OPTIONS[currentFY]?.label||'';
+  renderPage();
+  checkCarryoverPrompt(currentFY);
+}
+
+function switchTab(tab){currentTab=tab;buildNavTabs();buildSidebar();renderPage();}
+
+function getFYKey(label){return label;}
+function nextFYKey(fyKey){const num=parseInt(fyKey.replace('FY',''));return'FY'+(num+1);}
+function prevFYKey(fyKey){const num=parseInt(fyKey.replace('FY',''));return'FY'+(num-1);}
+
+function fyHasData(fyKey){
+  const fy=state.logs[fyKey];
+  if(!fy)return false;
+  return state.offices.some(o=>fy[o.id]&&Object.keys(fy[o.id]).length>0);
+}
+
+function prevFYHasJune(fyKey){
+  const prev=prevFYKey(fyKey);
+  const fy=state.logs[prev];
+  if(!fy)return false;
+  return state.offices.some(o=>fy[o.id]&&fy[o.id]['June']&&fy[o.id]['June'].length>0);
+}
+
+function carryoverFromJune(){
+  const prevFY=prevFYKey(currentFY);
+  const prevLogs=state.logs[prevFY];
+  if(!prevLogs){showToast('No data found in '+prevFY+' to carry over.');return;}
+  let copied=0;
+  state.offices.forEach(o=>{
+    const juneLogs=prevLogs[o.id]?.['June'];
+    if(!juneLogs||!juneLogs.length)return;
+    if(!state.logs[currentFY])state.logs[currentFY]={};
+    if(!state.logs[currentFY][o.id])state.logs[currentFY][o.id]={};
+    if(state.logs[currentFY][o.id]['July']&&state.logs[currentFY][o.id]['July'].length>0)return;
+    state.logs[currentFY][o.id]['July']=[...juneLogs.map(e=>({...e}))];
+    copied++;
+  });
+  if(copied===0){showToast('July already has data for all offices — nothing to carry over.');return;}
+  saveState();
+  renderPage();
+  showToast(`Carried over June ${prevFY} → July ${currentFY} for ${copied} office${copied!==1?'s':''} ✓`);
+}
+
+function checkCarryoverPrompt(newFY){
+  if(!fyHasData(newFY)&&prevFYHasJune(newFY)){
+    const prev=prevFYKey(newFY);
+    setTimeout(()=>{
+      if(confirm(`${newFY} has no data yet.\n\nWould you like to carry over June ${prev} inventory as the July ${newFY} starting point?\n\nYou can always adjust the numbers after.`)){
+        carryoverFromJune();
+      }
+    },300);
+  }
+}
+
+function renderPage(){
+  if(currentTab==='dashboard')renderDashboard();
+  else if(currentTab==='monthly')renderMonthly();
+  else if(currentTab==='inventory')renderInventory();
+  else if(currentTab==='invoices')renderInvoices();
+  else if(currentTab==='settings')renderSettings();
+}
+
+function buildSidebar(){
+  const sb=document.getElementById('appSidebar');
+  const showSidebar=['monthly','inventory'].includes(currentTab);
+  sb.style.display=showSidebar?'flex':'none';
+  if(!showSidebar)return;
+  const offices=state.offices;
+  let html='<div class="sidebar-section">Offices</div>';
+  offices.forEach(o=>{
+    const lm=latestMonth(o.id);
+    const log=lm?getLog(o.id,lm):[];
+    const low=log.filter(e=>{const it=state.items.find(i=>i.id===e.itemId);return e.qty<=(it?.threshold||5)&&e.qty>0;}).length;
+    const out=log.filter(e=>e.qty===0).length;
+    const isActive=(currentTab==='monthly'&&_mOffice===o.id)||(currentTab==='inventory'&&_iOffice===o.id);
+    let badge='';
+    if(out>0)badge=`<span class="si-badge badge-empty">${out} out</span>`;
+    else if(low>0)badge=`<span class="si-badge badge-low">${low} low</span>`;
+    html+=`<div class="sidebar-item ${isActive?'active':''}" onclick="sidebarSelectOffice('${o.id}')">
+      <span class="si-dot"></span>
+      <span style="flex:1">${o.name}</span>
+      ${badge}
+    </div>`;
+  });
+  html+=`<div class="sidebar-divider"></div>
+    <div class="sidebar-item" onclick="openAddOffice()" style="color:#6b7280;font-size:12px">
+      <span style="font-size:14px;line-height:1">+</span> Add office
+    </div>`;
+  sb.innerHTML=html;
+}
+
+function sidebarSelectOffice(oId){
+  if(currentTab==='monthly'){_mOffice=oId;renderMonthly(oId,_mMonth);}
+  else if(currentTab==='inventory'){_iOffice=oId;renderInventory();}
+  buildSidebar();
+}
+
+function getLog(officeId,month){
+  if(!state.logs[currentFY])state.logs[currentFY]={};
+  if(!state.logs[currentFY][officeId])state.logs[currentFY][officeId]={};
+  return state.logs[currentFY][officeId][month]||[];
+}
+function getQty(officeId,month,itemId){
+  const e=getLog(officeId,month).find(e=>e.itemId===itemId);
+  return e?e.qty:null;
+}
+function getNotes(officeId,month,itemId){
+  const e=getLog(officeId,month).find(e=>e.itemId===itemId);
+  return e?(e.notes||''):'';
+}
+function latestMonth(officeId){
+  const fy=state.logs[currentFY];
+  if(!fy||!fy[officeId])return null;
+  const checked=FY_MONTHS.filter(m=>fy[officeId][m]&&fy[officeId][m].length>0);
+  return checked.length?checked[checked.length-1]:null;
+}
+function statusBadge(qty,threshold){
+  if(qty===null||qty===undefined)return`<span style="color:#d1d5db">—</span>`;
+  if(qty===0)return`<span class="badge-empty">Out of stock</span>`;
+  if(qty<=(threshold||5))return`<span class="badge-low">Low: ${qty}</span>`;
+  return`<span class="badge-ok">${qty}</span>`;
+}
+function getCategories(){return[...new Set(state.items.map(i=>i.category))];}
+
+function renderDashboard(){
+  const offices=state.offices, items=state.items;
+  const latestChecked=FY_MONTHS.slice().reverse().find(m=>offices.some(o=>getLog(o.id,m).length>0))||null;
+  let lowCount=0,outCount=0,checkedOffices=0;
+  offices.forEach(o=>{if(latestChecked&&getLog(o.id,latestChecked).length>0)checkedOffices++;});
+  items.forEach(item=>offices.forEach(o=>{
+    const lm=latestMonth(o.id);if(!lm)return;
+    const q=getQty(o.id,lm,item.id);if(q===null)return;
+    if(q===0)outCount++;else if(q<=(item.threshold||5))lowCount++;
+  }));
+
+  const officeCards=offices.map(o=>{
+    const lm=latestMonth(o.id);
+    const log=lm?getLog(o.id,lm):[];
+    const total=log.reduce((s,e)=>s+Number(e.qty||0),0);
+    const low=log.filter(e=>{const it=items.find(i=>i.id===e.itemId);return e.qty<=(it?.threshold||5)&&e.qty>0;}).length;
+    const out=log.filter(e=>e.qty===0).length;
+    return`<div class="mc">
+      <div class="lbl">${o.name}</div>
+      <div class="val blue">${total}</div>
+      <div class="sub">total qty · ${lm||'not checked'}</div>
+      ${low>0?`<div style="margin-top:5px"><span class="badge-low">${low} low</span></div>`:''}
+      ${out>0?`<div style="margin-top:3px"><span class="badge-empty">${out} out</span></div>`:''}
+    </div>`;
+  }).join('');
+
+  let alerts=[];
+  items.forEach(item=>offices.forEach(o=>{
+    const lm=latestMonth(o.id);if(!lm)return;
+    const q=getQty(o.id,lm,item.id);if(q===null)return;
+    if(q===0)alerts.push(`<b>${item.name}</b> is <span class="badge-empty">Out of stock</span> at ${o.name} (${lm})`);
+    else if(q<=(item.threshold||5))alerts.push(`<b>${item.name}</b> is <span class="badge-low">Low (${q})</span> at ${o.name} (${lm})`);
+  }));
+
+  const recentMonths=FY_MONTHS.filter(m=>offices.some(o=>getLog(o.id,m).length>0)).slice(-3);
+
+  let html=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:700">Dashboard — ${currentFY} <span style="font-size:12px;color:#9ca3af;font-weight:400">${FY_OPTIONS[currentFY]?.label||''}</span></div>
+      <button class="btn btn-primary" onclick="openLogModal()">+ Log monthly check</button>
+    </div>
+    <div class="mgrid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="mc"><div class="lbl">Item types</div><div class="val">${items.length}</div><div class="sub">tracked</div></div>
+      <div class="mc"><div class="lbl">Offices checked</div><div class="val blue">${checkedOffices}</div><div class="sub">of ${offices.length}</div></div>
+      <div class="mc"><div class="lbl">Low stock alerts</div><div class="val amber">${lowCount}</div><div class="sub">running low</div></div>
+      <div class="mc"><div class="lbl">Out of stock</div><div class="val red">${outCount}</div><div class="sub">at zero</div></div>
+    </div>
+    <div class="mgrid" style="grid-template-columns:repeat(${Math.min(offices.length,4)||1},1fr)">${officeCards||'<div class="mc"><div class="lbl">No offices</div><div class="val">—</div></div>'}</div>`;
+
+  if(alerts.length){
+    html+=`<div class="sec"><div class="sec-hdr"><h3>⚠ Alerts</h3></div><div style="padding:4px 0">
+      ${alerts.map(a=>`<div style="padding:9px 14px;border-bottom:1px solid #f3f4f6;font-size:13px">${a}</div>`).join('')}
+    </div></div>`;
+  }
+
+  if(recentMonths.length){
+    html+=`<div class="sec"><div class="sec-hdr"><h3>Recent monthly checks</h3><button class="btn btn-primary btn-sm" onclick="switchTab('monthly')">View all →</button></div>
+      <div style="overflow-x:auto"><table>
+        <thead>
+          <tr><th>Item</th><th>Category</th>${recentMonths.map(m=>`<th colspan="${offices.length}">${m}</th>`).join('')}</tr>
+          <tr><th></th><th></th>${recentMonths.map(()=>offices.map(o=>`<th style="font-size:9px;color:#9ca3af">${o.name.replace(' Office','')}</th>`).join('')).join('')}</tr>
+        </thead>
+        <tbody>
+          ${getCategories().map(cat=>{
+            const citems=state.items.filter(i=>i.category===cat);
+            return`<tr class="cat-row"><td colspan="${2+recentMonths.length*offices.length}">${cat}</td></tr>`
+              +citems.map(item=>`<tr>
+                <td style="font-weight:600">${item.name}</td>
+                <td style="color:#9ca3af;font-size:11px">${item.category}</td>
+                ${recentMonths.map(m=>offices.map(o=>`<td style="text-align:center">${statusBadge(getQty(o.id,m,item.id),item.threshold)}</td>`).join('')).join('')}
+              </tr>`).join('');
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+  } else {
+    html+=`<div class="sec"><div style="padding:32px;text-align:center;color:#9ca3af;font-size:14px">No checks recorded yet.<br><br><button class="btn btn-primary" onclick="openLogModal()">+ Log your first check</button></div></div>`;
+  }
+  document.getElementById('pageContent').innerHTML=html;
+}
+
+let _mOffice='', _mMonth='';
+function renderMonthly(oId,month){
+  const offices=state.offices,items=state.items;
+  if(!oId)oId=_mOffice||(offices[0]?.id||'');
+  if(!month)month=_mMonth||FY_MONTHS[0];
+  _mOffice=oId;_mMonth=month;
+  buildSidebar();
+
+  const monthBtns=FY_MONTHS.map(m=>{
+    const has=oId&&getLog(oId,m).length>0;
+    return`<button class="month-btn ${m===month?'active':''}" onclick="renderMonthly('${oId}','${m}')" style="${has?'font-weight:700':''}">${m.slice(0,3)}${has?' ✓':''}</button>`;
+  }).join('');
+
+  const log=oId?getLog(oId,month):[];
+  const officeName=offices.find(o=>o.id===oId)?.name||'';
+
+  let tableRows='';
+  getCategories().forEach(cat=>{
+    const catItems=items.filter(i=>i.category===cat);
+    tableRows+=`<tr class="cat-row"><td colspan="4">${cat}</td></tr>`;
+    catItems.forEach(item=>{
+      const q=getQty(oId,month,item.id);
+      const n=getNotes(oId,month,item.id);
+      tableRows+=`<tr>
+        <td style="font-weight:600">${item.name}</td>
+        <td style="text-align:center">${statusBadge(q,item.threshold)}</td>
+        <td style="text-align:center;color:#374151">${q!==null?q:'—'}</td>
+        <td style="color:#9ca3af;font-size:11px">${n||'—'}</td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('pageContent').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700">${officeName}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px">Monthly checks — ${currentFY}</div>
+      </div>
+      <button class="btn btn-primary" onclick="openLogModal('${oId}','${month}')">+ Log / update check</button>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap">${monthBtns}</div>
+    ${log.length?`
+    <div class="sec">
+      <div class="sec-hdr">
+        <h3>${officeName} — ${month} check</h3>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="openLogModal('${oId}','${month}')">✏ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLog('${oId}','${month}')">🗑 Delete</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Item</th><th>Status</th><th>Quantity</th><th>Notes</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table></div>
+    </div>`:
+    `<div class="sec"><div style="padding:32px;text-align:center;color:#9ca3af;font-size:14px">
+      No check recorded for ${officeName} in ${month}.<br><br>
+      <button class="btn btn-primary" onclick="openLogModal('${oId}','${month}')">+ Log this check</button>
+    </div></div>`}`;
+}
+
+let _iOffice='';
+function renderInventory(){
+  const offices=state.offices,items=state.items;
+  if(!_iOffice)_iOffice=offices[0]?.id||'';
+  buildSidebar();
+
+  const viewOffices=_iOffice?offices.filter(o=>o.id===_iOffice):offices;
+  const latest={};offices.forEach(o=>{latest[o.id]=latestMonth(o.id);});
+  const selectedOffice=offices.find(o=>o.id===_iOffice);
+  const offHdrs=viewOffices.map(o=>`<th style="text-align:center">${o.name.replace(' Office','')}<br><span style="font-size:9px;color:#9ca3af;font-weight:400">${latest[o.id]||'no data'}</span></th>`).join('');
+  let rows='';
+  getCategories().forEach(cat=>{
+    const catItems=items.filter(i=>i.category===cat);
+    rows+=`<tr class="cat-row"><td colspan="${3+viewOffices.length}">${cat}</td></tr>`;
+    catItems.forEach(item=>{
+      const qtds=viewOffices.map(o=>{
+        const m=latest[o.id];
+        return`<td style="text-align:center">${statusBadge(m?getQty(o.id,m,item.id):null,item.threshold)}</td>`;
+      }).join('');
+      const total=viewOffices.reduce((s,o)=>{const m=latest[o.id];const q=m?getQty(o.id,m,item.id):null;return s+(q!==null?Number(q):0);},0);
+      rows+=`<tr>
+        <td style="font-weight:600">${item.name}</td>
+        ${qtds}
+        <td style="text-align:center;font-weight:700">${total}</td>
+        <td><div style="display:flex;gap:3px">
+          <button class="btn btn-sm" onclick="openEditItem('${item.id}')">✏</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑</button>
+        </div></td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('pageContent').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700">${selectedOffice?selectedOffice.name:'All Offices'}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px">Inventory snapshot — latest check</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddItem()">+ Add item</button>
+    </div>
+    <div class="sec"><div style="overflow-x:auto"><table>
+      <thead><tr><th>Item</th>${offHdrs}<th style="text-align:center">Total</th><th></th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px">No items yet</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+
+function renderSettings(){
+  const uRows=users.list.map(u=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(u,22)}<span style="font-weight:600">${u}</span>${u===currentUser?'<span style="font-size:10px;color:#2E4DA3;background:#eef2ff;padding:1px 7px;border-radius:4px;margin-left:4px">you</span>':''}</div></td>
+    <td><button class="btn btn-danger btn-sm" onclick="removeUser('${u}')" ${u===currentUser?'disabled':''}>Remove</button></td>
+  </tr>`).join('');
+
+  const oRows=state.offices.map(o=>`<tr>
+    <td style="font-weight:600">${o.name}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn btn-sm" onclick="openEditOffice('${o.id}')">✏</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteOffice('${o.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+
+  const iRows=state.items.map(item=>`<tr>
+    <td style="font-weight:600">${item.name}</td>
+    <td style="color:#9ca3af;font-size:12px">${item.category}</td>
+    <td style="text-align:center">${item.threshold||5}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn btn-sm" onclick="openEditItem('${item.id}')">✏</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+
+  document.getElementById('pageContent').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+      <div>
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sec-hdr"><h3>Team members (${users.list.length}/5)</h3></div>
+          <table><thead><tr><th>Name</th><th></th></tr></thead>
+          <tbody>${uRows||'<tr><td colspan="2" style="color:#9ca3af;text-align:center;padding:14px">No users yet</td></tr>'}</tbody></table>
+          ${users.list.length<5?`<div style="padding:10px 12px;border-top:1px solid #f3f4f6;display:flex;gap:8px">
+            <input id="settingsNewUser" placeholder="Add team member..." style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="addUserFromSettings()">Add</button>
+          </div>`:`<div style="padding:10px 12px;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6">Max 5 users reached.</div>`}
+        </div>
+        <div class="sec">
+          <div class="sec-hdr"><h3>Offices (${state.offices.length})</h3><button class="btn btn-primary btn-sm" onclick="openAddOffice()">+ Add</button></div>
+          <table><thead><tr><th>Office</th><th></th></tr></thead><tbody>${oRows}</tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sec-hdr"><h3>Items (${state.items.length})</h3><button class="btn btn-primary btn-sm" onclick="openAddItem()">+ Add</button></div>
+          <table><thead><tr><th>Item</th><th>Category</th><th style="text-align:center">Threshold</th><th></th></tr></thead>
+          <tbody>${iRows}</tbody></table>
+        </div>
+        <div class="sec">
+          <div class="sec-hdr"><h3>📦 Year-End Carryover</h3></div>
+          <div style="padding:14px 16px">
+            <p style="font-size:12px;color:#374151;margin-bottom:10px;line-height:1.6">
+              Copies <strong>June ${prevFYKey(currentFY)}</strong> inventory into <strong>July ${currentFY}</strong> as a starting point for the new fiscal year. Only offices that don't already have a July check will be updated.
+            </p>
+            ${prevFYHasJune(currentFY)
+              ? `<button class="btn btn-primary" onclick="if(confirm('Copy June ${prevFYKey(currentFY)} inventory into July ${currentFY} for all offices?\\n\\nOffices that already have July data will not be changed.'))carryoverFromJune()">
+                  📦 Carry Over June ${prevFYKey(currentFY)} → July ${currentFY}
+                </button>`
+              : `<div style="font-size:12px;color:#9ca3af;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb">
+                  No June data found in ${prevFYKey(currentFY)} yet. Log June checks first, then return here to carry them over.
+                </div>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openLogModal(officeId,month){
+  const offices=state.offices;
+  if(!officeId&&offices.length)officeId=offices[0].id;
+  if(!month)month=currentCalMonth();
+  const oSel=document.getElementById('log_office');
+  oSel.innerHTML=offices.map(o=>`<option value="${o.id}" ${o.id===officeId?'selected':''}>${o.name}</option>`).join('');
+  document.getElementById('log_month').value=month;
+  buildLogItems();
+  openModal('logModal');
+}
+
+function buildLogItems(){
+  const officeId=document.getElementById('log_office').value;
+  const month=document.getElementById('log_month').value;
+  const items=state.items;
+  let html='';
+  getCategories().forEach(cat=>{
+    const catItems=items.filter(i=>i.category===cat);
+    html+=`<div style="font-size:13px;font-weight:700;color:#111827;padding:10px 12px 4px;border-top:2px solid #e5e7eb">${cat}</div>`;
+    catItems.forEach(item=>{
+      const q=getQty(officeId,month,item.id);
+      const n=getNotes(officeId,month,item.id);
+      html+=`<div style="display:grid;grid-template-columns:1fr 80px 1fr;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid #f3f4f6">
+        <div style="font-size:12px;font-weight:600">${item.name}</div>
+        <input type="number" min="0" style="text-align:center;padding:4px 6px;font-size:12px" id="qty_${item.id}" value="${q!==null?q:''}" placeholder="0">
+        <input type="text" style="font-size:11px;padding:4px 7px" id="notes_${item.id}" value="${n||''}" placeholder="Notes...">
+      </div>`;
+    });
+  });
+  document.getElementById('logItemsContainer').innerHTML=html;
+}
+
+function saveLog(){
+  const officeId=document.getElementById('log_office').value;
+  const month=document.getElementById('log_month').value;
+  if(!state.logs[currentFY])state.logs[currentFY]={};
+  if(!state.logs[currentFY][officeId])state.logs[currentFY][officeId]={};
+  const entries=[];
+  state.items.forEach(item=>{
+    const qEl=document.getElementById('qty_'+item.id);
+    const nEl=document.getElementById('notes_'+item.id);
+    if(!qEl)return;
+    const qty=qEl.value===''?null:parseInt(qEl.value);
+    if(qty!==null)entries.push({itemId:item.id,qty,notes:nEl?nEl.value.trim():''});
+  });
+  state.logs[currentFY][officeId][month]=entries;
+  saveState();
+  closeModal('logModal');
+  const oName=state.offices.find(o=>o.id===officeId)?.name||'';
+  showToast(`${oName} — ${month} check saved (${entries.length} items).`);
+  renderPage();
+}
+
+function deleteLog(officeId,month){
+  const oName=state.offices.find(o=>o.id===officeId)?.name||'';
+  if(!confirm(`Delete the ${month} check for ${oName}?`))return;
+  const backup=state.logs[currentFY]?.[officeId]?.[month];
+  undoStack.push({type:'deleteLog',fy:currentFY,officeId,month,data:backup});
+  delete state.logs[currentFY][officeId][month];
+  saveState();showToast('Check deleted.',true);
+  renderMonthly(officeId,month);
+}
+
+function currentCalMonth(){
+  const m=new Date().getMonth();
+  return FY_MONTHS[m>=6?m-6:m+6]||FY_MONTHS[0];
+}
+
+function openAddItem(){
+  document.getElementById('itemModalTitle').textContent='Add item';
+  document.getElementById('item_id').value='';
+  document.getElementById('item_name').value='';
+  document.getElementById('item_category').value='Other';
+  document.getElementById('item_threshold').value='5';
+  openModal('itemModal');
+}
+function openEditItem(id){
+  const it=state.items.find(i=>i.id===id);if(!it)return;
+  document.getElementById('itemModalTitle').textContent='Edit item';
+  document.getElementById('item_id').value=it.id;
+  document.getElementById('item_name').value=it.name;
+  document.getElementById('item_category').value=it.category;
+  document.getElementById('item_threshold').value=it.threshold||5;
+  openModal('itemModal');
+}
+function saveItem(){
+  const name=document.getElementById('item_name').value.trim();
+  if(!name){alert('Enter an item name.');return;}
+  const id=document.getElementById('item_id').value||uid();
+  const rec={id,name,category:document.getElementById('item_category').value,threshold:parseInt(document.getElementById('item_threshold').value)||5};
+  const idx=state.items.findIndex(i=>i.id===id);
+  if(idx>=0)state.items[idx]=rec;else state.items.push(rec);
+  saveState();closeModal('itemModal');
+  showToast(idx>=0?'Item updated.':'Item added.');
+  renderPage();
+}
+function deleteItem(id){
+  const it=state.items.find(i=>i.id===id);if(!it)return;
+  if(!confirm(`Delete "${it.name}"?`))return;
+  undoStack.push({type:'deleteItem',item:it,idx:state.items.findIndex(i=>i.id===id)});
+  state.items=state.items.filter(i=>i.id!==id);
+  saveState();showToast(`"${it.name}" deleted.`,true);renderPage();
+}
+
+function openAddOffice(){
+  document.getElementById('officeModalTitle').textContent='Add office';
+  document.getElementById('office_id').value='';
+  document.getElementById('office_name').value='';
+  openModal('officeModal');
+}
+function openEditOffice(id){
+  const o=state.offices.find(x=>x.id===id);if(!o)return;
+  document.getElementById('officeModalTitle').textContent='Edit office';
+  document.getElementById('office_id').value=o.id;
+  document.getElementById('office_name').value=o.name;
+  openModal('officeModal');
+}
+function saveOffice(){
+  const name=document.getElementById('office_name').value.trim();
+  if(!name){alert('Enter an office name.');return;}
+  const id=document.getElementById('office_id').value||uid();
+  const rec={id,name};
+  const idx=state.offices.findIndex(o=>o.id===id);
+  if(idx>=0)state.offices[idx]=rec;else state.offices.push(rec);
+  saveState();closeModal('officeModal');
+  showToast(idx>=0?'Office updated.':'Office added.');renderPage();
+}
+function deleteOffice(id){
+  const o=state.offices.find(x=>x.id===id);if(!o)return;
+  if(!confirm(`Delete "${o.name}"? All log data for this office will be removed.`))return;
+  undoStack.push({type:'deleteOffice',office:o,idx:state.offices.findIndex(x=>x.id===id)});
+  state.offices=state.offices.filter(x=>x.id!==id);
+  if(_mOffice===id)_mOffice='';
+  if(_iOffice===id)_iOffice='';
+  saveState();showToast(`"${o.name}" deleted.`,true);renderPage();
+}
+
+function removeUser(name){
+  if(name===currentUser){alert('Cannot remove yourself while logged in.');return;}
+  if(!confirm(`Remove "${name}"?`))return;
+  users.list=users.list.filter(u=>u!==name);
+  saveState();showToast(`"${name}" removed.`);renderPage();
+}
+function addUserFromSettings(){
+  const n=document.getElementById('settingsNewUser').value.trim();
+  if(!n)return;
+  if(users.list.length>=5){alert('Maximum 5 users.');return;}
+  if(!users.list.includes(n)){users.list.push(n);saveState();}
+  showToast(`"${n}" added.`);renderPage();
+}
+
+function openAddInvoice(){
+  document.getElementById('invoiceModalTitle').textContent='Add order / invoice';
+  ['inv_id','inv_vendor','inv_items_desc','inv_date_ordered','inv_qty_ordered',
+   'inv_date_received','inv_qty_received','inv_total','inv_due_date','inv_paid','inv_notes'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('inv_confirmed').value='';
+  openModal('invoiceModal');
+}
+function openEditInvoice(id){
+  const inv=state.invoices.find(i=>i.id===id);if(!inv)return;
+  document.getElementById('invoiceModalTitle').textContent='Edit order / invoice';
+  document.getElementById('inv_id').value=inv.id;
+  document.getElementById('inv_vendor').value=inv.vendor||'';
+  document.getElementById('inv_items_desc').value=inv.itemsDesc||'';
+  document.getElementById('inv_date_ordered').value=inv.dateOrdered||'';
+  document.getElementById('inv_qty_ordered').value=inv.qtyOrdered||'';
+  document.getElementById('inv_date_received').value=inv.dateReceived||'';
+  document.getElementById('inv_qty_received').value=inv.qtyReceived||'';
+  document.getElementById('inv_total').value=inv.total||'';
+  document.getElementById('inv_due_date').value=inv.dueDate||'';
+  document.getElementById('inv_paid').value=inv.paid||'';
+  document.getElementById('inv_confirmed').value=inv.confirmed||'';
+  document.getElementById('inv_notes').value=inv.notes||'';
+  openModal('invoiceModal');
+}
+function saveInvoice(){
+  const vendor=document.getElementById('inv_vendor').value.trim();
+  const itemsDesc=document.getElementById('inv_items_desc').value.trim();
+  if(!vendor||!itemsDesc){alert('Vendor and item(s) ordered are required.');return;}
+  const id=document.getElementById('inv_id').value||uid();
+  const rec={
+    id,vendor,itemsDesc,
+    dateOrdered:document.getElementById('inv_date_ordered').value,
+    qtyOrdered:document.getElementById('inv_qty_ordered').value,
+    dateReceived:document.getElementById('inv_date_received').value,
+    qtyReceived:document.getElementById('inv_qty_received').value,
+    total:document.getElementById('inv_total').value,
+    dueDate:document.getElementById('inv_due_date').value,
+    paid:document.getElementById('inv_paid').value,
+    confirmed:document.getElementById('inv_confirmed').value,
+    notes:document.getElementById('inv_notes').value.trim(),
+    createdBy:currentUser,
+    fy:currentFY,
+  };
+  const idx=state.invoices.findIndex(i=>i.id===id);
+  if(idx>=0)state.invoices[idx]=rec;else state.invoices.push(rec);
+  saveState();closeModal('invoiceModal');
+  showToast(idx>=0?'Invoice updated.':'Invoice added.');renderPage();
+}
+function deleteInvoice(id){
+  const inv=state.invoices.find(i=>i.id===id);if(!inv)return;
+  if(!confirm(`Delete invoice for "${inv.vendor} — ${inv.itemsDesc}"?`))return;
+  undoStack.push({type:'deleteInvoice',invoice:inv,idx:state.invoices.findIndex(i=>i.id===id)});
+  state.invoices=state.invoices.filter(i=>i.id!==id);
+  saveState();showToast('Invoice deleted.',true);renderPage();
+}
+function fmtDate(d){if(!d)return'—';const p=d.split('-');return p.length===3?`${p[1]}/${p[2]}/${p[0]}`:'—';}
+function fmtMoney(v){if(v===''||v===null||v===undefined)return'—';const n=parseFloat(v);return isNaN(n)?'—':'$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function confirmBadge(v){
+  if(v==='yes')return`<span class="badge-ok">✓ Confirmed</span>`;
+  if(v==='partial')return`<span class="badge-low">⚠ Partial</span>`;
+  if(v==='no')return`<span class="badge-empty">✕ Discrepancy</span>`;
+  return`<span style="color:#9ca3af;font-size:11px">Pending</span>`;
+}
+function payStatusBadge(paid,total){
+  const p=parseFloat(paid)||0,t=parseFloat(total)||0;
+  if(t===0)return`<span style="color:#9ca3af;font-size:11px">—</span>`;
+  if(p>=t)return`<span class="badge-ok">Paid</span>`;
+  if(p>0)return`<span class="badge-low">Partial</span>`;
+  return`<span class="badge-empty">Unpaid</span>`;
+}
+function isOverdue(dueDate,paid,total){
+  if(!dueDate)return false;
+  const p=parseFloat(paid)||0,t=parseFloat(total)||0;
+  if(p>=t&&t>0)return false;
+  return new Date(dueDate)<new Date(new Date().toDateString());
+}
+
+function renderInvoices(){
+  const all=state.invoices.filter(i=>i.fy===currentFY);
+  const invs=[...all].sort((a,b)=>(b.dateOrdered||'').localeCompare(a.dateOrdered||''));
+
+  const totalInvoiced=all.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
+  const totalPaid=all.reduce((s,i)=>s+(parseFloat(i.paid)||0),0);
+  const totalOwed=totalInvoiced-totalPaid;
+  const overdueCount=all.filter(i=>isOverdue(i.dueDate,i.paid,i.total)).length;
+
+  const rows=invs.map(inv=>{
+    const overdue=isOverdue(inv.dueDate,inv.paid,inv.total);
+    return`<tr style="${overdue?'background:#fff7f7':''}">
+      <td style="font-weight:600;font-size:12px">${fmtDate(inv.dateOrdered)}</td>
+      <td style="font-weight:600">${inv.vendor}</td>
+      <td>${inv.itemsDesc}</td>
+      <td style="text-align:center">${inv.qtyOrdered||'—'}</td>
+      <td style="text-align:center">${fmtDate(inv.dateReceived)}</td>
+      <td style="text-align:center">${inv.qtyReceived||'—'}</td>
+      <td style="text-align:center">${confirmBadge(inv.confirmed)}</td>
+      <td style="text-align:right;font-weight:600">${fmtMoney(inv.total)}</td>
+      <td style="text-align:center${overdue?';color:#dc2626;font-weight:700':''}">${fmtDate(inv.dueDate)}${overdue?' ⚠':''}</td>
+      <td style="text-align:right">${fmtMoney(inv.paid)}</td>
+      <td style="text-align:center">${payStatusBadge(inv.paid,inv.total)}</td>
+      <td style="text-align:right;font-weight:600;color:${(parseFloat(inv.total)||0)-(parseFloat(inv.paid)||0)>0?'#dc2626':'#16a34a'}">${fmtMoney((parseFloat(inv.total)||0)-(parseFloat(inv.paid)||0))}</td>
+      <td style="max-width:120px;font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inv.notes||''}">${inv.notes||'—'}</td>
+      <td><div style="display:flex;gap:3px">
+        <button class="btn btn-sm" onclick="openEditInvoice('${inv.id}')">✏</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}')">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('pageContent').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:700">Invoices & Orders — ${currentFY}</div>
+      <button class="btn btn-primary" onclick="openAddInvoice()">+ Add order / invoice</button>
+    </div>
+    <div class="mgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+      <div class="mc"><div class="lbl">Total invoiced</div><div class="val blue">${fmtMoney(totalInvoiced)}</div><div class="sub">${all.length} order${all.length!==1?'s':''}</div></div>
+      <div class="mc"><div class="lbl">Total paid</div><div class="val green">${fmtMoney(totalPaid)}</div></div>
+      <div class="mc"><div class="lbl">Amount owed</div><div class="val ${totalOwed>0?'amber':'green'}">${fmtMoney(totalOwed)}</div></div>
+      <div class="mc"><div class="lbl">Overdue</div><div class="val ${overdueCount>0?'red':'green'}">${overdueCount}</div><div class="sub">invoice${overdueCount!==1?'s':''}</div></div>
+    </div>
+    <div class="sec"><div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>Date ordered</th>
+        <th>Vendor</th>
+        <th>Items</th>
+        <th style="text-align:center">Qty ordered</th>
+        <th style="text-align:center">Date received</th>
+        <th style="text-align:center">Qty received</th>
+        <th style="text-align:center">Delivery confirmed</th>
+        <th style="text-align:right">Invoice total</th>
+        <th style="text-align:center">Due date</th>
+        <th style="text-align:right">Paid</th>
+        <th style="text-align:center">Status</th>
+        <th style="text-align:right">Balance</th>
+        <th>Notes</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows||'<tr><td colspan="14" style="text-align:center;color:#9ca3af;padding:32px">No invoices yet for '+currentFY+'.<br><br><button class="btn btn-primary" onclick="openAddInvoice()">+ Add your first order</button></td></tr>'}</tbody>
+    </table></div></div>`;
+}
+
+function doUndo(){
+  if(!undoStack.length)return;
+  const last=undoStack.pop();
+  if(last.type==='deleteItem')state.items.splice(last.idx,0,last.item);
+  else if(last.type==='deleteOffice')state.offices.splice(last.idx,0,last.office);
+  else if(last.type==='deleteInvoice')state.invoices.splice(last.idx,0,last.invoice);
+  else if(last.type==='deleteLog'){
+    if(!state.logs[last.fy])state.logs[last.fy]={};
+    if(!state.logs[last.fy][last.officeId])state.logs[last.fy][last.officeId]={};
+    state.logs[last.fy][last.officeId][last.month]=last.data;
+  }
+  saveState();hideToast();showToast('Restored.');renderPage();
+}
+
+function manualSave(){saveState();lsSet('cmt2_fy',currentFY);showToast(`Saved by ${currentUser} ✓`);}
+function doPrint(){window.print();}
+function confirmClearFY(){
+  if(confirm(`Clear ALL check data for ${currentFY}? Items and offices will be kept.`)){
+    delete state.logs[currentFY];
+    saveState();showToast(`${currentFY} data cleared.`);renderPage();
+  }
+}
+function showToast(msg,undo=false){
+  clearTimeout(toastTimer);
+  document.getElementById('toastMsg').textContent=msg;
+  document.getElementById('undoBtn').style.display=undo?'inline-flex':'none';
+  document.getElementById('toastBar').classList.add('show');
+  if(!undo)toastTimer=setTimeout(hideToast,3500);
+}
+function hideToast(){document.getElementById('toastBar').classList.remove('show');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function exportCSV(){
+  const offices=state.offices,items=state.items;
+  let csv=`CLASS Materials Tracker — ${currentFY}\r\n\r\n`;
+  csv+=`Item,Category,${FY_MONTHS.flatMap(m=>offices.map(o=>`${m} - ${o.name}`)).join(',')}\r\n`;
+  items.forEach(item=>{
+    const row=[`"${item.name}"`,`"${item.category}"`];
+    FY_MONTHS.forEach(m=>offices.forEach(o=>{const q=getQty(o.id,m,item.id);row.push(q!==null?q:'');}));
+    csv+=row.join(',')+'\r\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`class-materials-${currentFY}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  showToast('CSV exported to Downloads folder.');
+}
+
+init();
+</script>
+</body>
+</html>
