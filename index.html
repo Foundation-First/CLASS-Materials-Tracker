@@ -295,12 +295,12 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 // (Items, Offices, Logs, Invoices) plus Users — changes are visible to
 // everyone within a save (~30s auto-refresh poll for others' edits).
 
-// FILL THESE IN before using — see setup notes shared alongside this file.
+// ⚠️ FILL THESE IN before using — see setup notes shared alongside this file.
 const MSAL_CONFIG = {
   auth: {
     clientId: 'c9d91e79-f95e-47da-96b6-e351a426435b',
     authority: 'https://login.microsoftonline.com/b77af963-5d86-4e95-b7e6-10c711ac58f4',
-    redirectUri: window.location.origin + window.location.pathname
+    redirectUri: 'https://foundation-first.github.io/CLASS-Materials-Tracker/auth.html'
   },
   cache: { cacheLocation: 'localStorage' }
 };
