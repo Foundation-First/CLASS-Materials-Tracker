@@ -306,10 +306,10 @@ const MSAL_CONFIG = {
 };
 const GRAPH_SCOPES = ['Files.ReadWrite'];
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
-const SITE_HOST = 'smartbeginningsra.sharepoint.com';
-const SITE_PATH = '/sites/Finance-Operations';
-const LIBRARY_NAME = 'Procurement';
-const WORKBOOK_NAME = 'CLASS-Materials-Tracker.xlsx';
+
+// This avoids needing admin-consented Sites.Read.All to enumerate the site's
+// libraries — it resolves the one file directly under your own file access.
+const WORKBOOK_SHARE_URL = 'https://smartbeginningsra.sharepoint.com/:x:/s/Finance-Operations/IQCapy4aAPysT7z4zWJ6jcbJASiaTevVJv53_cenC7znx0I?e=8VViUE';
 
 let msalInstance=null, msalAccount=null, driveId=null, workbookItemId=null;
 let lastSynced={items:[],offices:[],invoices:[],logs:{},users:[]};
@@ -365,15 +365,20 @@ async function graphFetch(path, opts={}){
   return res.json();
 }
 
+function encodeSharingUrl(url){
+  const base64 = btoa(unescape(encodeURIComponent(url))).replace(/=/g,'').replace(/\//g,'_').replace(/\+/g,'-');
+  return 'u!' + base64;
+}
+
 async function resolveWorkbook(){
   if(workbookItemId) return;
-  const site = await graphFetch(`/sites/${SITE_HOST}:${SITE_PATH}`);
-  const drives = await graphFetch(`/sites/${site.id}/drives`);
-  const drive = drives.value.find(d=>d.name===LIBRARY_NAME);
-  if(!drive) throw new Error(`Library "${LIBRARY_NAME}" not found on this site.`);
-  driveId = drive.id;
-  const file = await graphFetch(`/drives/${driveId}/root:/${encodeURIComponent(WORKBOOK_NAME)}`);
-  workbookItemId = file.id;
+  if(!WORKBOOK_SHARE_URL || WORKBOOK_SHARE_URL.startsWith('PASTE_')){
+    throw new Error('WORKBOOK_SHARE_URL is not set — paste in a SharePoint sharing link for the workbook.');
+  }
+  const shareId = encodeSharingUrl(WORKBOOK_SHARE_URL);
+  const item = await graphFetch(`/shares/${shareId}/driveItem?$select=id,parentReference`);
+  workbookItemId = item.id;
+  driveId = item.parentReference.driveId;
 }
 
 function tablePath(tableName, suffix=''){ return `/drives/${driveId}/items/${workbookItemId}/workbook/tables/${tableName}${suffix}`; }
